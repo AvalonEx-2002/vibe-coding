@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BMW Sales Analysis Dashboard</title>
 
-  <!-- Google Fonts: Geist -->
+  <!-- Geist font -->
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&display=swap" rel="stylesheet">
 
   <style>
@@ -13,8 +13,8 @@
       margin: 0;
       padding: 0;
       font-family: 'Geist', sans-serif;
-      background: #ecf0f3;
-      color: #1c1c1c;
+      background: #0d0d1a;
+      color: #f0f0f0;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -27,15 +27,11 @@
       font-weight: 600;
       font-size: 1.8rem;
       color: #fff;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(15px) saturate(180%);
-      -webkit-backdrop-filter: blur(15px) saturate(180%);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      background: linear-gradient(135deg, #1a1a2e, #0f3460, #533483);
     }
 
     footer {
       font-size: 1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .dashboard {
@@ -48,18 +44,17 @@
     }
 
     .card {
-      background: rgba(255, 255, 255, 0.25);
+      background: rgba(25, 25, 40, 0.9);
       border-radius: 20px;
       padding: 1rem;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
     }
 
     .card h2 {
       font-size: 1.2rem;
       margin-bottom: 0.8rem;
       text-align: center;
+      color: #e0e0ff;
     }
 
     canvas {
@@ -76,8 +71,8 @@
       padding: 0.5rem;
       border-radius: 8px;
       border: none;
-      background: rgba(255, 255, 255, 0.6);
-      color: #000;
+      background: #1f1f2e;
+      color: #fff;
       font-weight: 500;
       outline: none;
     }
@@ -97,9 +92,7 @@
 
   <div class="filters">
     <label for="yearFilter">Filter by Year:</label>
-    <select id="yearFilter">
-      <!-- Years will be sorted in ascending order -->
-    </select>
+    <select id="yearFilter"></select>
   </div>
 
   <div class="dashboard">
@@ -109,13 +102,13 @@
     </div>
 
     <div class="card">
-      <h2>Color Distribution</h2>
-      <canvas id="colorDonut"></canvas>
+      <h2>Sales by Region</h2>
+      <canvas id="regionDonut"></canvas>
     </div>
 
     <div class="card">
-      <h2>Sales by Region</h2>
-      <canvas id="regionBar"></canvas>
+      <h2>Sales by Color</h2>
+      <canvas id="colorDonut"></canvas>
     </div>
 
     <div class="card">
@@ -124,24 +117,18 @@
     </div>
 
     <div class="card">
-      <h2>Transmission Types</h2>
+      <h2>Sales by Fuel Type</h2>
+      <canvas id="fuelPie"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Sales by Transmission</h2>
       <canvas id="transmissionPie"></canvas>
     </div>
 
-    <!-- Extra visuals for other columns -->
     <div class="card">
-      <h2>Sales by Model</h2>
+      <h2>Sales by Car Model</h2>
       <canvas id="modelBar"></canvas>
-    </div>
-
-    <div class="card">
-      <h2>Sales by Dealer</h2>
-      <canvas id="dealerBar"></canvas>
-    </div>
-
-    <div class="card">
-      <h2>Units Sold Distribution</h2>
-      <canvas id="unitsHistogram"></canvas>
     </div>
   </div>
 
@@ -151,117 +138,140 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // Example data
-    const years = [2018, 2019, 2020, 2021, 2022, 2023];
-    const sales = [500, 700, 1200, 1500, 1300, 1600];
+    // Example dataset (replace with your real dataset)
+    const dataset = [
+      { year: 2020, sales: 500, region: "North", color: "Black", engine: "2.0L", fuel: "Petrol", transmission: "Automatic", model: "X1" },
+      { year: 2020, sales: 700, region: "South", color: "White", engine: "3.0L", fuel: "Diesel", transmission: "Manual", model: "X3" },
+      { year: 2021, sales: 900, region: "East", color: "Red", engine: "2.0L", fuel: "Petrol", transmission: "Automatic", model: "X5" },
+      { year: 2021, sales: 600, region: "West", color: "Blue", engine: "4.4L", fuel: "Hybrid", transmission: "Automatic", model: "M3" },
+      { year: 2022, sales: 1200, region: "North", color: "Black", engine: "3.0L", fuel: "Electric", transmission: "Automatic", model: "M5" },
+    ];
 
-    // Populate year filter sorted ascending
+    // Extract available years
+    const years = [...new Set(dataset.map(d => d.year))].sort((a, b) => a - b);
+
+    // Populate filter
     const yearFilter = document.getElementById("yearFilter");
-    years.sort((a, b) => a - b).forEach(y => {
+    years.forEach(y => {
       const option = document.createElement("option");
       option.value = y;
       option.textContent = y;
       yearFilter.appendChild(option);
     });
 
-    // Sales Trend Line Chart
-    new Chart(document.getElementById("salesTrend"), {
-      type: "line",
-      data: {
-        labels: years,
-        datasets: [{
-          label: "Sales",
-          data: sales,
-          borderColor: "#007aff",
-          backgroundColor: "rgba(0,122,255,0.2)",
-          fill: true,
-          tension: 0.3
-        }]
-      }
-    });
+    // Chart references
+    let charts = {};
 
-    // Other charts placeholders (replace with real dataset integration)
-    new Chart(document.getElementById("colorDonut"), {
-      type: "doughnut",
-      data: {
-        labels: ["Black", "White", "Red", "Blue"],
-        datasets: [{
-          data: [300, 500, 200, 150],
-          backgroundColor: ["#000000", "#ffffff", "#ff3b30", "#007aff"]
-        }]
-      }
-    });
+    function updateCharts(selectedYear) {
+      const data = dataset.filter(d => d.year == selectedYear);
 
-    new Chart(document.getElementById("regionBar"), {
-      type: "bar",
-      data: {
-        labels: ["North", "South", "East", "West"],
-        datasets: [{
-          label: "Sales",
-          data: [200, 400, 600, 300],
-          backgroundColor: "#34c759"
-        }]
-      }
-    });
+      // Sales Trend (across all years, static)
+      const salesByYear = years.map(y => dataset.filter(d => d.year == y).reduce((sum, r) => sum + r.sales, 0));
+      charts.salesTrend.data.labels = years;
+      charts.salesTrend.data.datasets[0].data = salesByYear;
+      charts.salesTrend.update();
 
-    new Chart(document.getElementById("engineBar"), {
-      type: "bar",
-      data: {
-        labels: ["1.6L", "2.0L", "3.0L", "4.4L"],
-        datasets: [{
-          label: "Sales",
-          data: [150, 450, 300, 100],
-          backgroundColor: "#ff9500"
-        }]
-      }
-    });
+      // Region Donut
+      const regions = [...new Set(data.map(d => d.region))];
+      const regionValues = regions.map(r => data.filter(d => d.region == r).reduce((s, r2) => s + r2.sales, 0));
+      charts.regionDonut.data.labels = regions;
+      charts.regionDonut.data.datasets[0].data = regionValues;
+      charts.regionDonut.update();
 
-    new Chart(document.getElementById("transmissionPie"), {
-      type: "pie",
-      data: {
-        labels: ["Automatic", "Manual"],
-        datasets: [{
-          data: [700, 300],
-          backgroundColor: ["#007aff", "#8e8e93"]
-        }]
-      }
-    });
+      // Color Donut
+      const colors = [...new Set(data.map(d => d.color))];
+      const colorValues = colors.map(c => data.filter(d => d.color == c).reduce((s, r2) => s + r2.sales, 0));
+      charts.colorDonut.data.labels = colors;
+      charts.colorDonut.data.datasets[0].data = colorValues;
+      charts.colorDonut.data.datasets[0].backgroundColor = colors.map(c => c.toLowerCase());
+      charts.colorDonut.update();
 
-    // Extra visuals
-    new Chart(document.getElementById("modelBar"), {
-      type: "bar",
-      data: {
-        labels: ["X1", "X3", "X5", "M3", "M5"],
-        datasets: [{
-          label: "Sales",
-          data: [120, 250, 200, 150, 80],
-          backgroundColor: "#5856d6"
-        }]
-      }
-    });
+      // Engine Bar
+      const engines = [...new Set(data.map(d => d.engine))];
+      const engineValues = engines.map(e => data.filter(d => d.engine == e).reduce((s, r2) => s + r2.sales, 0));
+      charts.engineBar.data.labels = engines;
+      charts.engineBar.data.datasets[0].data = engineValues;
+      charts.engineBar.update();
 
-    new Chart(document.getElementById("dealerBar"), {
-      type: "bar",
-      data: {
-        labels: ["Dealer A", "Dealer B", "Dealer C"],
-        datasets: [{
-          label: "Sales",
-          data: [300, 400, 500],
-          backgroundColor: "#ff2d55"
-        }]
-      }
-    });
+      // Fuel Pie
+      const fuels = [...new Set(data.map(d => d.fuel))];
+      const fuelValues = fuels.map(f => data.filter(d => d.fuel == f).reduce((s, r2) => s + r2.sales, 0));
+      charts.fuelPie.data.labels = fuels;
+      charts.fuelPie.data.datasets[0].data = fuelValues;
+      charts.fuelPie.update();
 
-    new Chart(document.getElementById("unitsHistogram"), {
-      type: "bar",
-      data: {
-        labels: ["1-50", "51-100", "101-150", "151-200"],
-        datasets: [{
-          label: "Units Sold",
-          data: [50, 80, 40, 20],
-          backgroundColor: "#ffcc00"
-        }]
-      }
+      // Transmission Pie
+      const transmissions = [...new Set(data.map(d => d.transmission))];
+      const transValues = transmissions.map(t => data.filter(d => d.transmission == t).reduce((s, r2) => s + r2.sales, 0));
+      charts.transmissionPie.data.labels = transmissions;
+      charts.transmissionPie.data.datasets[0].data = transValues;
+      charts.transmissionPie.update();
+
+      // Model Bar
+      const models = [...new Set(data.map(d => d.model))];
+      const modelValues = models.map(m => data.filter(d => d.model == m).reduce((s, r2) => s + r2.sales, 0));
+      charts.modelBar.data.labels = models;
+      charts.modelBar.data.datasets[0].data = modelValues;
+      charts.modelBar.update();
+    }
+
+    // Init charts
+    function initCharts() {
+      const chartFont = {
+        family: 'Geist',
+        size: 13,
+        weight: '500'
+      };
+
+      charts.salesTrend = new Chart(document.getElementById("salesTrend"), {
+        type: "line",
+        data: { labels: [], datasets: [{ label: "Sales", data: [], borderColor: "#00aaff", backgroundColor: "rgba(0,170,255,0.3)", fill: true, tension: 0.3 }] },
+        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } }, scales: { x: { ticks: { color: "#fff", font: chartFont } }, y: { ticks: { color: "#fff", font: chartFont } } } }
+      });
+
+      charts.regionDonut = new Chart(document.getElementById("regionDonut"), {
+        type: "doughnut",
+        data: { labels: [], datasets: [{ data: [], backgroundColor: ["#007aff","#34c759","#ffcc00","#ff3b30"] }] },
+        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } } }
+      });
+
+      charts.colorDonut = new Chart(document.getElementById("colorDonut"), {
+        type: "doughnut",
+        data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
+        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } } }
+      });
+
+      charts.engineBar = new Chart(document.getElementById("engineBar"), {
+        type: "bar",
+        data: { labels: [], datasets: [{ label: "Sales", data: [], backgroundColor: "#9d4edd" }] },
+        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } }, scales: { x: { ticks: { color: "#fff", font: chartFont } }, y: { ticks: { color: "#fff", font: chartFont } } } }
+      });
+
+      charts.fuelPie = new Chart(document.getElementById("fuelPie"), {
+        type: "pie",
+        data: { labels: [], datasets: [{ data: [], backgroundColor: ["#ff6b6b","#1dd1a1","#54a0ff","#feca57"] }] },
+        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } } }
+      });
+
+      charts.transmissionPie = new Chart(document.getElementById("transmissionPie"), {
+        type: "pie",
+        data: { labels: [], datasets: [{ data: [], backgroundColor: ["#ff9f43","#10ac84"] }] },
+        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } } }
+      });
+
+      charts.modelBar = new Chart(document.getElementById("modelBar"), {
+        type: "bar",
+        data: { labels: [], datasets: [{ label: "Sales", data: [], backgroundColor: "#5f27cd" }] },
+        options: { indexAxis: 'x', plugins: { legend: { labels: { font: chartFont, color: "#fff" } } }, scales: { x: { ticks: { color: "#fff", font: chartFont, maxRotation: 90, minRotation: 90 } }, y: { ticks: { color: "#fff", font: chartFont } } } }
+      });
+    }
+
+    initCharts();
+    updateCharts(years[0]);
+
+    // Handle filter change
+    yearFilter.addEventListener("change", (e) => {
+      updateCharts(e.target.value);
     });
   </script>
 </body>
