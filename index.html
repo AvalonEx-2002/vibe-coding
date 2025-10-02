@@ -6,7 +6,7 @@
   <title>BMW Sales Analysis Dashboard</title>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Google Fonts (Apple-like font: SF Pro replacement) -->
+  <!-- Apple-like font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
@@ -18,69 +18,54 @@
     }
     header {
       text-align: center;
-      padding: 1rem;
+      padding: 1rem 0;
       backdrop-filter: blur(10px);
       background: rgba(0,0,0,0.6);
     }
     header h1 {
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       font-weight: 600;
       margin: 0;
-      color: #e0e0ff;
-    }
-    .banner {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow-x: auto;
-      padding: 1rem;
-      gap: 1rem;
-      background: rgba(255, 255, 255, 0.05);
-    }
-    .banner img {
-      height: 150px;
-      border-radius: 16px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
-      transition: transform 0.3s ease;
-    }
-    .banner img:hover {
-      transform: scale(1.05);
+      color: #dcdcff;
     }
     .filter {
       text-align: center;
       margin: 1.5rem 0;
     }
     select {
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1.2rem;
       border-radius: 12px;
       border: none;
       font-size: 1rem;
       background: #2d2d3a;
       color: #fff;
+      cursor: pointer;
     }
     .container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 1.5rem;
-      padding: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2rem;
+      padding: 2rem;
+      max-width: 1400px;
+      margin: auto;
     }
     .chart-card {
       background: rgba(255,255,255,0.07);
       border-radius: 16px;
-      padding: 1rem;
+      padding: 1.5rem;
       backdrop-filter: blur(12px);
       box-shadow: 0 6px 20px rgba(0,0,0,0.5);
     }
     .chart-title {
       text-align: center;
-      margin-bottom: 0.8rem;
+      margin-bottom: 1rem;
       font-size: 1.1rem;
       font-weight: 600;
       color: #bdbdff;
     }
     canvas {
       width: 100% !important;
-      height: 300px !important;
+      height: 340px !important;
     }
     footer {
       text-align: center;
@@ -92,10 +77,10 @@
     }
     @media (max-width: 768px) {
       header h1 {
-        font-size: 1.4rem;
+        font-size: 1.3rem;
       }
-      .banner img {
-        height: 120px;
+      canvas {
+        height: 260px !important;
       }
     }
   </style>
@@ -104,13 +89,6 @@
   <header>
     <h1>BMW Sales Analysis Dashboard</h1>
   </header>
-
-  <!-- Banner with BMW cars -->
-  <div class="banner">
-    <img src="https://www.bmwusa.com/content/dam/bmwusa/common/vehicles/2023/my23-3-series-sedan/overview/BMW-MY23-3Series-Overview-01.jpg" alt="BMW 3 Series">
-    <img src="https://www.bmwusa.com/content/dam/bmwusa/common/vehicles/2023/my23-x5-suv/overview/BMW-MY23-X5-Overview-02.jpg" alt="BMW X5">
-    <img src="https://www.bmwusa.com/content/dam/bmwusa/common/vehicles/2023/my23-7-series-sedan/overview/BMW-MY23-7Series-Overview-03.jpg" alt="BMW 7 Series">
-  </div>
 
   <!-- Year Filter -->
   <div class="filter">
@@ -123,29 +101,33 @@
   <!-- Dashboard Charts -->
   <div class="container">
     <div class="chart-card">
-      <div class="chart-title">📈 Sales Trend by Year</div>
+      <div class="chart-title">📈 Sales Trend by Year (Line Chart)</div>
       <canvas id="salesTrend"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🎨 Popular Car Colors</div>
+      <div class="chart-title">📊 Sales Trend by Year (Area Chart)</div>
+      <canvas id="salesArea"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">🎨 Popular Car Colors (Donut)</div>
       <canvas id="colorDonut"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🌍 Sales by Region</div>
+      <div class="chart-title">🌍 Sales by Region (Bar)</div>
       <canvas id="regionBar"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">⚙️ Engine Size vs Sales</div>
+      <div class="chart-title">⚙️ Engine Size vs Sales (Bar)</div>
       <canvas id="engineBar"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🚘 Transmission Types</div>
+      <div class="chart-title">🚘 Transmission Types (Pie)</div>
       <canvas id="transmissionPie"></canvas>
     </div>
   </div>
 
   <footer>
-    © 2025 BMW Sales Analysis | Designed with passion & precision
+    © 2025 BMW Sales Analysis | Designed with elegance & precision
   </footer>
 
   <script>
@@ -219,7 +201,7 @@
           // Destroy old charts
           Chart.helpers.each(Chart.instances, function(instance) { instance.destroy(); });
 
-          // Sales Trend
+          // Sales Trend (Line)
           new Chart(document.getElementById("salesTrend"), {
             type: "line",
             data: {
@@ -228,7 +210,21 @@
                 label: "Sales Volume",
                 data: Object.values(yearSales),
                 borderColor: "#4facfe",
-                backgroundColor: "rgba(79,172,254,0.3)",
+                backgroundColor: "transparent"
+              }]
+            }
+          });
+
+          // Sales Trend (Area)
+          new Chart(document.getElementById("salesArea"), {
+            type: "line",
+            data: {
+              labels: Object.keys(yearSales),
+              datasets: [{
+                label: "Sales Volume",
+                data: Object.values(yearSales),
+                borderColor: "#43e97b",
+                backgroundColor: "rgba(67,233,123,0.3)",
                 fill: true
               }]
             }
@@ -283,7 +279,7 @@
               labels: Object.keys(transmissionSales),
               datasets: [{
                 data: Object.values(transmissionSales),
-                backgroundColor: ["#ff9f1c", "#2ec4b6", "#e71d36"]
+                backgroundColor: ["#ff9f1c", "#2ec4b6", "#e71d36", "#9b5de5"]
               }]
             }
           });
