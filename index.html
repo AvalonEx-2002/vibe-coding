@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Car Sales Dashboard</title>
+  <title>BMW Sales Analysis Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -14,18 +14,25 @@
     header {
       text-align: center;
       padding: 2rem;
-      font-size: 2rem;
-      font-weight: 600;
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
       backdrop-filter: blur(10px);
       background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: auto;
       padding: 2rem;
     }
     .filter {
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    label {
+      font-size: 1.1rem;
+      font-weight: 500;
     }
     select {
       padding: 0.5rem 1rem;
@@ -38,24 +45,38 @@
     }
     .charts {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
       gap: 2rem;
     }
     .chart-card {
       background: rgba(255, 255, 255, 0.05);
       border-radius: 16px;
-      padding: 1rem;
+      padding: 1rem 1.5rem;
       backdrop-filter: blur(12px);
       box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .chart-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-align: center;
     }
     canvas {
       width: 100% !important;
       height: 350px !important;
     }
+    footer {
+      margin-top: 3rem;
+      padding: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #bbb;
+      background: rgba(255,255,255,0.05);
+    }
   </style>
 </head>
 <body>
-  <header>🚘 Car Sales Dashboard</header>
+  <header>BMW Sales Analysis Dashboard</header>
   <div class="container">
     <div class="filter">
       <label for="yearFilter">Filter by Year: </label>
@@ -64,12 +85,17 @@
       </select>
     </div>
     <div class="charts">
-      <div class="chart-card"><canvas id="salesVolumeChart"></canvas></div>
-      <div class="chart-card"><canvas id="priceChart"></canvas></div>
-      <div class="chart-card"><canvas id="fuelTypeChart"></canvas></div>
-      <div class="chart-card"><canvas id="transmissionChart"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Sales Volume by Model</div><canvas id="salesVolumeChart"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Average Price by Model</div><canvas id="priceChart"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Fuel Type Distribution</div><canvas id="fuelTypeChart"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Transmission Type</div><canvas id="transmissionChart"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Yearly Sales Trend</div><canvas id="yearlySalesChart"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Most Popular Car Colors</div><canvas id="colorChart"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Sales by Region</div><canvas id="regionChart"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Sales by Engine Size</div><canvas id="engineChart"></canvas></div>
     </div>
   </div>
+  <footer>© 2025 BMW Sales Analysis Dashboard | Designed with inspiration from Apple UI</footer>
 
   <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbkKYeVn1qV4pJKqtTnbD7CLYiJ-ZP3dQjFdpT0nbrxtgW4jl2BuejOYY5GKBzkmFzrxGxrIwOA7tP/pub?output=csv";
@@ -77,7 +103,6 @@
     let rawData = [];
     let charts = {};
 
-    // Parse CSV into array of objects
     function parseCSV(text) {
       const rows = text.split("\n").map(r => r.split(","));
       const headers = rows[0];
@@ -118,44 +143,73 @@
     function renderCharts(year) {
       let data = year === "All" ? rawData : rawData.filter(d => d["Year"] === year);
 
-      // Sales Volume by Model (Bar)
       let models = [...new Set(data.map(d => d.Model))];
-      let salesVolume = models.map(m => {
-        return data.filter(d => d.Model === m).reduce((sum, d) => sum + Number(d.Sales_Volume || 0), 0);
-      });
 
+      // Sales Volume by Model
+      let salesVolume = models.map(m => data.filter(d => d.Model === m).reduce((sum, d) => sum + Number(d.Sales_Volume || 0), 0));
       createChart("salesVolumeChart", "bar", {
         labels: models,
-        datasets: [{ label: "Sales Volume", data: salesVolume, backgroundColor: "rgba(0, 123, 255, 0.6)" }]
+        datasets: [{ label: "Sales Volume", data: salesVolume, backgroundColor: "rgba(0, 123, 255, 0.7)" }]
       });
 
-      // Average Price by Model (Line)
+      // Avg Price by Model
       let avgPrice = models.map(m => {
         let items = data.filter(d => d.Model === m);
         return items.reduce((sum, d) => sum + Number(d.Price_USD || 0), 0) / (items.length || 1);
       });
-
       createChart("priceChart", "line", {
         labels: models,
-        datasets: [{ label: "Avg Price (USD)", data: avgPrice, borderColor: "#ff6384", fill: true }]
+        datasets: [{ label: "Avg Price (USD)", data: avgPrice, borderColor: "#ff6384", backgroundColor: "rgba(255,99,132,0.2)", fill: true }]
       });
 
-      // Fuel Type Distribution (Donut)
+      // Fuel Type Distribution
       let fuels = [...new Set(data.map(d => d.Fuel_Type))];
       let fuelCounts = fuels.map(f => data.filter(d => d.Fuel_Type === f).length);
-
       createChart("fuelTypeChart", "doughnut", {
         labels: fuels,
         datasets: [{ data: fuelCounts, backgroundColor: ["#36a2eb", "#ffcd56", "#4bc0c0", "#9966ff"] }]
       });
 
-      // Transmission Count (Pie)
+      // Transmission Distribution
       let trans = [...new Set(data.map(d => d.Transmission))];
       let transCounts = trans.map(t => data.filter(d => d.Transmission === t).length);
-
       createChart("transmissionChart", "pie", {
         labels: trans,
         datasets: [{ data: transCounts, backgroundColor: ["#ff6384", "#36a2eb", "#ff9f40"] }]
+      });
+
+      // Yearly Sales Trend (static line)
+      let yearSales = {};
+      rawData.forEach(d => {
+        yearSales[d.Year] = (yearSales[d.Year] || 0) + Number(d.Sales_Volume || 0);
+      });
+      createChart("yearlySalesChart", "line", {
+        labels: Object.keys(yearSales),
+        datasets: [{ label: "Total Sales", data: Object.values(yearSales), borderColor: "#4bc0c0", fill: true }]
+      });
+
+      // Color Distribution
+      let colors = [...new Set(data.map(d => d.Color))];
+      let colorCounts = colors.map(c => data.filter(d => d.Color === c).length);
+      createChart("colorChart", "doughnut", {
+        labels: colors,
+        datasets: [{ data: colorCounts, backgroundColor: colors }]
+      });
+
+      // Region Sales
+      let regions = [...new Set(data.map(d => d.Region))];
+      let regionSales = regions.map(r => data.filter(d => d.Region === r).reduce((sum, d) => sum + Number(d.Sales_Volume || 0), 0));
+      createChart("regionChart", "bar", {
+        labels: regions,
+        datasets: [{ label: "Sales", data: regionSales, backgroundColor: "rgba(153, 102, 255, 0.7)" }]
+      });
+
+      // Engine Size Sales
+      let engines = [...new Set(data.map(d => d.Engine_Size_L))];
+      let engineSales = engines.map(e => data.filter(d => d.Engine_Size_L === e).reduce((sum, d) => sum + Number(d.Sales_Volume || 0), 0));
+      createChart("engineChart", "bar", {
+        labels: engines,
+        datasets: [{ label: "Sales", data: engineSales, backgroundColor: "rgba(255, 206, 86, 0.7)" }]
       });
     }
 
