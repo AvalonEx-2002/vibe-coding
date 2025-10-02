@@ -4,55 +4,60 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BMW Sales Analysis Dashboard</title>
-  
-  <!-- Geist Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  <link href="https://fonts.googleapis.com/css2?family=Geist&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Geist', sans-serif;
+      background: linear-gradient(135deg, #000000, #001f3f);
+      color: #f0f0f0;
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #0a0a0f, #0d1b2a);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
 
     header, footer {
-      width: 100%;
       text-align: center;
-      padding: 15px;
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    footer {
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
-      margin-top: 20px;
+      padding: 20px;
+      background: rgba(0, 0, 50, 0.5);
+      backdrop-filter: blur(12px);
+      border-radius: 12px;
+      margin: 10px;
     }
 
     h1 {
-      font-size: 1.8rem;
+      font-size: 2rem;
       margin: 0;
-      font-weight: 600;
     }
 
-    .filter-container {
-      margin: 20px;
+    footer {
+      font-size: 0.9rem;
+      margin-top: 20px;
+    }
+
+    .filter {
       text-align: center;
+      margin: 15px 0;
+    }
+
+    label {
+      margin-right: 10px;
+      font-size: 1rem;
     }
 
     select {
-      padding: 8px;
-      border-radius: 6px;
-      background: #1c2541;
-      color: white;
-      border: 1px solid #3a506b;
-      font-size: 14px;
+      padding: 8px 12px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #00bfff;
+      background: #001f3f;
+      color: #ffffff;
+      appearance: none;
+      backdrop-filter: blur(6px);
+    }
+
+    select option {
+      background: #001a33;
+      color: #ffffff;
     }
 
     .dashboard {
@@ -60,22 +65,25 @@
       grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
       gap: 20px;
       padding: 20px;
-      width: 90%;
-      max-width: 1400px;
     }
 
     .card {
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(12px);
+      background: rgba(0, 0, 30, 0.6);
       border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      padding: 15px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
       text-align: center;
     }
 
     canvas {
-      max-width: 100%;
-      height: auto !important;
+      width: 100% !important;
+      height: 280px !important; /* compressed height */
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -84,173 +92,149 @@
     <h1>BMW Sales Analysis Dashboard</h1>
   </header>
 
-  <div class="filter-container">
-    <label for="yearFilter">Filter by Year: </label>
-    <select id="yearFilter"></select>
+  <div class="filter">
+    <label for="yearFilter">Filter by Year:</label>
+    <select id="yearFilter">
+      <option value="All">All</option>
+    </select>
   </div>
 
   <div class="dashboard">
     <div class="card">
-      <h3>Sales Trend (Line Chart)</h3>
-      <canvas id="lineChart"></canvas>
+      <h2>Sales Trend by Year</h2>
+      <canvas id="salesTrend"></canvas>
     </div>
     <div class="card">
-      <h3>Sales by Region</h3>
-      <canvas id="regionChart"></canvas>
+      <h2>Sales by Region</h2>
+      <canvas id="salesByRegion"></canvas>
     </div>
     <div class="card">
-      <h3>Sales by Color</h3>
-      <canvas id="colorChart"></canvas>
+      <h2>Sales by Color</h2>
+      <canvas id="salesByColor"></canvas>
     </div>
     <div class="card">
-      <h3>Sales by Engine Size</h3>
-      <canvas id="engineChart"></canvas>
+      <h2>Sales by Engine Size</h2>
+      <canvas id="salesByEngine"></canvas>
     </div>
     <div class="card">
-      <h3>Sales by Fuel Type</h3>
-      <canvas id="fuelChart"></canvas>
+      <h2>Sales by Fuel Type</h2>
+      <canvas id="salesByFuel"></canvas>
     </div>
     <div class="card">
-      <h3>Sales by Transmission</h3>
-      <canvas id="transmissionChart"></canvas>
+      <h2>Sales by Transmission</h2>
+      <canvas id="salesByTransmission"></canvas>
     </div>
     <div class="card">
-      <h3>Sales by Car Model</h3>
-      <canvas id="modelChart"></canvas>
+      <h2>Sales by Car Model</h2>
+      <canvas id="salesByModel"></canvas>
     </div>
   </div>
 
   <footer>
-    <p>© 2025 BMW Sales Dashboard | Powered by Chart.js</p>
+    <p>&copy; 2025 BMW Sales Analysis | Powered by Chart.js</p>
   </footer>
 
   <script>
-    const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbkKYeVn1qV4pJKqtTnbD7CLYiJ-ZP3dQjFdpT0nbrxtgW4jl2BuejOYY5GKBzkmFzrxGxrIwOA7tP/pub?output=csv";
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbkKYeVn1qV4pJKqtTnbD7CLYiJ-ZP3dQjFdpT0nbrxtgW4jl2BuejOYY5GKBzkmFzrxGxrIwOA7tP/pub?output=csv";
+
     let allData = [];
     let charts = {};
 
-    async function fetchData() {
-      const response = await fetch(url);
+    async function loadData() {
+      const response = await fetch(sheetUrl);
       const text = await response.text();
       const rows = text.split("\n").map(r => r.split(","));
       const headers = rows[0];
-      const data = rows.slice(1).map(r => Object.fromEntries(headers.map((h, i) => [h.trim(), r[i]])));
-      allData = data;
+      allData = rows.slice(1).map(r => Object.fromEntries(r.map((val, i) => [headers[i], val])));
       populateYearFilter();
-      updateCharts();
+      updateCharts("All");
     }
 
     function populateYearFilter() {
-      const yearFilter = document.getElementById("yearFilter");
-      const years = [...new Set(allData.map(d => d.Year))].sort((a,b) => a - b);
-      years.forEach(year => {
+      const years = [...new Set(allData.map(d => d.Year))].sort((a,b)=>a-b);
+      const filter = document.getElementById("yearFilter");
+      years.forEach(y => {
         const option = document.createElement("option");
-        option.value = year;
-        option.textContent = year;
-        yearFilter.appendChild(option);
+        option.value = y;
+        option.textContent = y;
+        filter.appendChild(option);
       });
-      yearFilter.addEventListener("change", updateCharts);
+      filter.addEventListener("change", () => updateCharts(filter.value));
     }
 
-    function updateCharts() {
-      const year = document.getElementById("yearFilter").value;
-      const filteredData = year ? allData.filter(d => d.Year === year) : allData;
+    function updateCharts(year) {
+      const data = year === "All" ? allData : allData.filter(d => d.Year === year);
 
-      createLineChart(filteredData);
-      createBarChart(filteredData, "Region", "regionChart", "Sales by Region");
-      createDonutChart(filteredData, "Color", "colorChart", "Sales by Color", true);
-      createBarChart(filteredData, "Engine Size", "engineChart", "Sales by Engine Size");
-      createPieChart(filteredData, "Fuel Type", "fuelChart", "Sales by Fuel Type");
-      createPieChart(filteredData, "Transmission", "transmissionChart", "Sales by Transmission");
-      createBarChart(filteredData, "Model", "modelChart", "Sales by Car Model", true);
-    }
+      const ctx = (id, type, data, options={}) => {
+        if (charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), { type, data, options });
+      };
 
-    function prepareData(data, key) {
-      const counts = {};
-      data.forEach(d => {
-        counts[d[key]] = (counts[d[key]] || 0) + 1;
+      // Sales Trend
+      const salesByYear = {};
+      allData.forEach(d => {
+        salesByYear[d.Year] = (salesByYear[d.Year] || 0) + parseFloat(d.Sales_Volume || 0);
       });
-      return Object.entries(counts).map(([label, value]) => ({label, value}));
-    }
-
-    function createLineChart(data) {
-      const counts = prepareData(data, "Year").sort((a,b) => a.label - b.label);
-      const ctx = document.getElementById("lineChart").getContext("2d");
-      if (charts.line) charts.line.destroy();
-      charts.line = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: counts.map(c => c.label),
-          datasets: [{
-            label: "Sales Trend",
-            data: counts.map(c => c.value),
-            borderColor: "#3a86ff",
-            backgroundColor: "#3a86ff33",
-            fill: true
-          }]
-        }
+      ctx("salesTrend", "line", {
+        labels: Object.keys(salesByYear),
+        datasets: [{ label: "Sales Volume", data: Object.values(salesByYear), borderColor: "#00BFFF", backgroundColor: "rgba(0,191,255,0.3)", fill: true }]
       });
-    }
 
-    function createBarChart(data, key, chartId, label, rotate=false) {
-      const counts = prepareData(data, key).sort((a,b) => a.value - b.value);
-      const ctx = document.getElementById(chartId).getContext("2d");
-      if (charts[chartId]) charts[chartId].destroy();
-      charts[chartId] = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: counts.map(c => c.label),
-          datasets: [{
-            label,
-            data: counts.map(c => c.value),
-            backgroundColor: "#4361ee"
-          }]
-        },
-        options: {
-          indexAxis: rotate ? "x" : "y",
-          scales: {
-            x: { ticks: { color: "white" }},
-            y: { ticks: { color: "white" }}
-          }
-        }
+      // Region (bar)
+      const regionData = {};
+      data.forEach(d => regionData[d.Region] = (regionData[d.Region] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByRegion", "bar", {
+        labels: Object.keys(regionData),
+        datasets: [{ label: "Sales Volume", data: Object.values(regionData), backgroundColor: "#1E90FF" }]
+      }, { plugins: { legend: { display: false } } });
+
+      // Color (donut with exact colors)
+      const colorMap = { Red: "#FF0000", Blue: "#0000FF", Black: "#000000", White: "#FFFFFF", Silver: "#C0C0C0", Green: "#008000", Grey: "#808080" };
+      const colorData = {};
+      data.forEach(d => colorData[d.Color] = (colorData[d.Color] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByColor", "doughnut", {
+        labels: Object.keys(colorData),
+        datasets: [{ data: Object.values(colorData), backgroundColor: Object.keys(colorData).map(c => colorMap[c] || "#999999") }]
       });
-    }
 
-    function createDonutChart(data, key, chartId, label, useColors=false) {
-      const counts = prepareData(data, key).sort((a,b) => a.value - b.value);
-      const ctx = document.getElementById(chartId).getContext("2d");
-      if (charts[chartId]) charts[chartId].destroy();
-      charts[chartId] = new Chart(ctx, {
-        type: "doughnut",
-        data: {
-          labels: counts.map(c => c.label),
-          datasets: [{
-            label,
-            data: counts.map(c => c.value),
-            backgroundColor: useColors ? counts.map(c => c.label.toLowerCase()) : ["#f72585","#7209b7","#3a0ca3","#4361ee","#4cc9f0"]
-          }]
-        }
+      // Engine Size
+      const engineData = {};
+      data.forEach(d => engineData[d.Engine_Size_L] = (engineData[d.Engine_Size_L] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByEngine", "bar", {
+        labels: Object.keys(engineData),
+        datasets: [{ label: "Sales Volume", data: Object.values(engineData), backgroundColor: "#483D8B" }]
+      }, { plugins: { legend: { display: false } } });
+
+      // Fuel Type
+      const fuelData = {};
+      data.forEach(d => fuelData[d.Fuel_Type] = (fuelData[d.Fuel_Type] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByFuel", "pie", {
+        labels: Object.keys(fuelData),
+        datasets: [{ data: Object.values(fuelData), backgroundColor: ["#FFD700", "#ADFF2F", "#00CED1", "#FF69B4", "#FF4500"] }]
+      });
+
+      // Transmission
+      const transData = {};
+      data.forEach(d => transData[d.Transmission] = (transData[d.Transmission] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByTransmission", "pie", {
+        labels: Object.keys(transData),
+        datasets: [{ data: Object.values(transData), backgroundColor: ["#1E90FF", "#FF8C00", "#32CD32"] }]
+      });
+
+      // Car Model
+      const modelData = {};
+      data.forEach(d => modelData[d.Model] = (modelData[d.Model] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByModel", "bar", {
+        labels: Object.keys(modelData),
+        datasets: [{ label: "Sales Volume", data: Object.values(modelData), backgroundColor: "#8A2BE2" }]
+      }, {
+        plugins: { legend: { display: false } },
+        indexAxis: 'x',
+        scales: { x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 90 } } }
       });
     }
 
-    function createPieChart(data, key, chartId, label) {
-      const counts = prepareData(data, key).sort((a,b) => a.value - b.value);
-      const ctx = document.getElementById(chartId).getContext("2d");
-      if (charts[chartId]) charts[chartId].destroy();
-      charts[chartId] = new Chart(ctx, {
-        type: "pie",
-        data: {
-          labels: counts.map(c => c.label),
-          datasets: [{
-            label,
-            data: counts.map(c => c.value),
-            backgroundColor: ["#f94144","#f3722c","#f9c74f","#90be6d","#43aa8b","#577590"]
-          }]
-        }
-      });
-    }
-
-    fetchData();
+    loadData();
   </script>
 </body>
 </html>
