@@ -9,7 +9,7 @@
   <style>
     body {
       font-family: 'Geist', sans-serif;
-      background: linear-gradient(135deg, #0d0d1a, #1a0033, #000000);
+      background: linear-gradient(135deg, #000000, #001f3f);
       color: #f0f0f0;
       margin: 0;
       padding: 0;
@@ -18,7 +18,7 @@
     header, footer {
       text-align: center;
       padding: 20px;
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(0, 0, 50, 0.5);
       backdrop-filter: blur(12px);
       border-radius: 12px;
       margin: 10px;
@@ -39,14 +39,25 @@
       margin: 15px 0;
     }
 
+    label {
+      margin-right: 10px;
+      font-size: 1rem;
+    }
+
     select {
       padding: 8px 12px;
       font-size: 1rem;
       border-radius: 8px;
-      border: none;
-      background: rgba(255, 255, 255, 0.1);
-      color: #f0f0f0;
+      border: 1px solid #00bfff;
+      background: #001f3f;
+      color: #ffffff;
+      appearance: none;
       backdrop-filter: blur(6px);
+    }
+
+    select option {
+      background: #001a33;
+      color: #ffffff;
     }
 
     .dashboard {
@@ -57,11 +68,11 @@
     }
 
     .card {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(0, 0, 30, 0.6);
       border-radius: 16px;
       padding: 15px;
       backdrop-filter: blur(12px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
       text-align: center;
     }
 
@@ -166,7 +177,7 @@
       });
       ctx("salesTrend", "line", {
         labels: Object.keys(salesByYear),
-        datasets: [{ label: "Sales Volume", data: Object.values(salesByYear), borderColor: "#00BFFF", fill: false }]
+        datasets: [{ label: "Sales Volume", data: Object.values(salesByYear), borderColor: "#00BFFF", backgroundColor: "rgba(0,191,255,0.3)", fill: true }]
       });
 
       // Region (bar)
@@ -174,7 +185,7 @@
       data.forEach(d => regionData[d.Region] = (regionData[d.Region] || 0) + parseFloat(d.Sales_Volume || 0));
       ctx("salesByRegion", "bar", {
         labels: Object.keys(regionData),
-        datasets: [{ label: "Sales Volume", data: Object.values(regionData), backgroundColor: "#6A5ACD" }]
+        datasets: [{ label: "Sales Volume", data: Object.values(regionData), backgroundColor: "#1E90FF" }]
       }, { plugins: { legend: { display: false } } });
 
       // Color (donut with exact colors)
@@ -191,7 +202,7 @@
       data.forEach(d => engineData[d.Engine_Size_L] = (engineData[d.Engine_Size_L] || 0) + parseFloat(d.Sales_Volume || 0));
       ctx("salesByEngine", "bar", {
         labels: Object.keys(engineData),
-        datasets: [{ label: "Sales Volume", data: Object.values(engineData), backgroundColor: "#9932CC" }]
+        datasets: [{ label: "Sales Volume", data: Object.values(engineData), backgroundColor: "#483D8B" }]
       }, { plugins: { legend: { display: false } } });
 
       // Fuel Type
