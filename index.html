@@ -1,286 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BMW Sales Analysis Dashboard</title>
-
-  <!-- Geist font -->
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&display=swap" rel="stylesheet">
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist&display=swap" rel="stylesheet">
   <style>
     body {
+      font-family: 'Geist', sans-serif;
+      background: linear-gradient(135deg, #0d0d1a, #1a0033, #000000);
+      color: #f0f0f0;
       margin: 0;
       padding: 0;
-      font-family: 'Geist', sans-serif;
-      background: #0d0d1a;
-      color: #f0f0f0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
 
     header, footer {
-      width: 100%;
-      padding: 1.2rem;
       text-align: center;
-      font-weight: 600;
-      font-size: 1.8rem;
-      color: #fff;
-      background: linear-gradient(135deg, #1a1a2e, #0f3460, #533483);
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      border-radius: 12px;
+      margin: 10px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin: 0;
     }
 
     footer {
+      font-size: 0.9rem;
+      margin-top: 20px;
+    }
+
+    .filter {
+      text-align: center;
+      margin: 15px 0;
+    }
+
+    select {
+      padding: 8px 12px;
       font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: #f0f0f0;
+      backdrop-filter: blur(6px);
     }
 
     .dashboard {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
       gap: 20px;
-      padding: 2rem;
-      width: 95%;
-      max-width: 1400px;
+      padding: 20px;
     }
 
     .card {
-      background: rgba(25, 25, 40, 0.9);
-      border-radius: 20px;
-      padding: 1rem;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-    }
-
-    .card h2 {
-      font-size: 1.2rem;
-      margin-bottom: 0.8rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 15px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
       text-align: center;
-      color: #e0e0ff;
     }
 
     canvas {
       width: 100% !important;
-      height: 300px !important;
+      height: 280px !important; /* compressed height */
     }
 
-    .filters {
-      margin: 1rem 0;
-      text-align: center;
-    }
-
-    select {
-      padding: 0.5rem;
-      border-radius: 8px;
-      border: none;
-      background: #1f1f2e;
-      color: #fff;
-      font-weight: 500;
-      outline: none;
-    }
-
-    @media (max-width: 768px) {
-      header { font-size: 1.5rem; }
-      .card h2 { font-size: 1rem; }
-      canvas { height: 250px !important; }
+    h2 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
-
   <header>
-    BMW Sales Analysis Dashboard
+    <h1>BMW Sales Analysis Dashboard</h1>
   </header>
 
-  <div class="filters">
+  <div class="filter">
     <label for="yearFilter">Filter by Year:</label>
-    <select id="yearFilter"></select>
+    <select id="yearFilter">
+      <option value="All">All</option>
+    </select>
   </div>
 
   <div class="dashboard">
     <div class="card">
-      <h2>Sales Trend (Yearly)</h2>
+      <h2>Sales Trend by Year</h2>
       <canvas id="salesTrend"></canvas>
     </div>
-
     <div class="card">
       <h2>Sales by Region</h2>
-      <canvas id="regionDonut"></canvas>
+      <canvas id="salesByRegion"></canvas>
     </div>
-
     <div class="card">
       <h2>Sales by Color</h2>
-      <canvas id="colorDonut"></canvas>
+      <canvas id="salesByColor"></canvas>
     </div>
-
     <div class="card">
       <h2>Sales by Engine Size</h2>
-      <canvas id="engineBar"></canvas>
+      <canvas id="salesByEngine"></canvas>
     </div>
-
     <div class="card">
       <h2>Sales by Fuel Type</h2>
-      <canvas id="fuelPie"></canvas>
+      <canvas id="salesByFuel"></canvas>
     </div>
-
     <div class="card">
       <h2>Sales by Transmission</h2>
-      <canvas id="transmissionPie"></canvas>
+      <canvas id="salesByTransmission"></canvas>
     </div>
-
     <div class="card">
       <h2>Sales by Car Model</h2>
-      <canvas id="modelBar"></canvas>
+      <canvas id="salesByModel"></canvas>
     </div>
   </div>
 
   <footer>
-    © 2025 BMW Sales Dashboard | Powered by Chart.js
+    <p>&copy; 2025 BMW Sales Analysis | Powered by Chart.js</p>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbkKYeVn1qV4pJKqtTnbD7CLYiJ-ZP3dQjFdpT0nbrxtgW4jl2BuejOYY5GKBzkmFzrxGxrIwOA7tP/pub?output=csv";
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbkKYeVn1qV4pJKqtTnbD7CLYiJ-ZP3dQjFdpT0nbrxtgW4jl2BuejOYY5GKBzkmFzrxGxrIwOA7tP/pub?output=csv";
 
-    let dataset = [];
+    let allData = [];
     let charts = {};
-    const yearFilter = document.getElementById("yearFilter");
 
     async function loadData() {
-      const res = await fetch(SHEET_URL);
-      const text = await res.text();
+      const response = await fetch(sheetUrl);
+      const text = await response.text();
       const rows = text.split("\n").map(r => r.split(","));
-
-      const headers = rows[0].map(h => h.trim());
-      dataset = rows.slice(1).map(r => {
-        let obj = {};
-        headers.forEach((h, i) => obj[h] = r[i]?.trim());
-        obj["Year"] = parseInt(obj["Year"]);
-        obj["Sales_Volume"] = parseInt(obj["Sales_Volume"]) || 0;
-        return obj;
-      });
-
-      initUI();
+      const headers = rows[0];
+      allData = rows.slice(1).map(r => Object.fromEntries(r.map((val, i) => [headers[i], val])));
+      populateYearFilter();
+      updateCharts("All");
     }
 
-    function initUI() {
-      // Populate years filter
-      const years = [...new Set(dataset.map(d => d.Year))].sort((a, b) => a - b);
-      yearFilter.innerHTML = "";
+    function populateYearFilter() {
+      const years = [...new Set(allData.map(d => d.Year))].sort((a,b)=>a-b);
+      const filter = document.getElementById("yearFilter");
       years.forEach(y => {
         const option = document.createElement("option");
         option.value = y;
         option.textContent = y;
-        yearFilter.appendChild(option);
+        filter.appendChild(option);
       });
-
-      initCharts();
-      updateCharts(years[0]);
-
-      yearFilter.addEventListener("change", e => updateCharts(parseInt(e.target.value)));
+      filter.addEventListener("change", () => updateCharts(filter.value));
     }
 
-    function aggregate(data, key) {
-      const groups = {};
-      data.forEach(d => {
-        const val = d[key];
-        groups[val] = (groups[val] || 0) + d.Sales_Volume;
-      });
-      return groups;
-    }
+    function updateCharts(year) {
+      const data = year === "All" ? allData : allData.filter(d => d.Year === year);
 
-    function updateCharts(selectedYear) {
-      const filtered = dataset.filter(d => d.Year === selectedYear);
-
-      // Sales Trend (all years, not filtered)
-      const yearly = aggregate(dataset, "Year");
-      charts.salesTrend.data.labels = Object.keys(yearly);
-      charts.salesTrend.data.datasets[0].data = Object.values(yearly);
-      charts.salesTrend.update();
-
-      // Region
-      const regionAgg = aggregate(filtered, "Region");
-      charts.regionDonut.data.labels = Object.keys(regionAgg);
-      charts.regionDonut.data.datasets[0].data = Object.values(regionAgg);
-      charts.regionDonut.update();
-
-      // Color
-      const colorAgg = aggregate(filtered, "Color");
-      charts.colorDonut.data.labels = Object.keys(colorAgg);
-      charts.colorDonut.data.datasets[0].data = Object.values(colorAgg);
-      charts.colorDonut.data.datasets[0].backgroundColor = Object.keys(colorAgg).map(c => c.toLowerCase());
-      charts.colorDonut.update();
-
-      // Engine Size
-      const engineAgg = aggregate(filtered, "Engine_Size_L");
-      charts.engineBar.data.labels = Object.keys(engineAgg);
-      charts.engineBar.data.datasets[0].data = Object.values(engineAgg);
-      charts.engineBar.update();
-
-      // Fuel Type
-      const fuelAgg = aggregate(filtered, "Fuel_Type");
-      charts.fuelPie.data.labels = Object.keys(fuelAgg);
-      charts.fuelPie.data.datasets[0].data = Object.values(fuelAgg);
-      charts.fuelPie.update();
-
-      // Transmission
-      const transAgg = aggregate(filtered, "Transmission");
-      charts.transmissionPie.data.labels = Object.keys(transAgg);
-      charts.transmissionPie.data.datasets[0].data = Object.values(transAgg);
-      charts.transmissionPie.update();
-
-      // Model
-      const modelAgg = aggregate(filtered, "Model");
-      charts.modelBar.data.labels = Object.keys(modelAgg);
-      charts.modelBar.data.datasets[0].data = Object.values(modelAgg);
-      charts.modelBar.update();
-    }
-
-    function initCharts() {
-      const chartFont = {
-        family: 'Geist',
-        size: 13,
-        weight: '500'
+      const ctx = (id, type, data, options={}) => {
+        if (charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), { type, data, options });
       };
 
-      charts.salesTrend = new Chart(document.getElementById("salesTrend"), {
-        type: "line",
-        data: { labels: [], datasets: [{ label: "Sales", data: [], borderColor: "#00aaff", backgroundColor: "rgba(0,170,255,0.3)", fill: true, tension: 0.3 }] },
-        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } }, scales: { x: { ticks: { color: "#fff", font: chartFont } }, y: { ticks: { color: "#fff", font: chartFont } } } }
+      // Sales Trend
+      const salesByYear = {};
+      allData.forEach(d => {
+        salesByYear[d.Year] = (salesByYear[d.Year] || 0) + parseFloat(d.Sales_Volume || 0);
+      });
+      ctx("salesTrend", "line", {
+        labels: Object.keys(salesByYear),
+        datasets: [{ label: "Sales Volume", data: Object.values(salesByYear), borderColor: "#00BFFF", fill: false }]
       });
 
-      charts.regionDonut = new Chart(document.getElementById("regionDonut"), {
-        type: "doughnut",
-        data: { labels: [], datasets: [{ data: [] }] },
-        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } } }
+      // Region (bar)
+      const regionData = {};
+      data.forEach(d => regionData[d.Region] = (regionData[d.Region] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByRegion", "bar", {
+        labels: Object.keys(regionData),
+        datasets: [{ label: "Sales Volume", data: Object.values(regionData), backgroundColor: "#6A5ACD" }]
+      }, { plugins: { legend: { display: false } } });
+
+      // Color (donut with exact colors)
+      const colorMap = { Red: "#FF0000", Blue: "#0000FF", Black: "#000000", White: "#FFFFFF", Silver: "#C0C0C0", Green: "#008000", Grey: "#808080" };
+      const colorData = {};
+      data.forEach(d => colorData[d.Color] = (colorData[d.Color] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByColor", "doughnut", {
+        labels: Object.keys(colorData),
+        datasets: [{ data: Object.values(colorData), backgroundColor: Object.keys(colorData).map(c => colorMap[c] || "#999999") }]
       });
 
-      charts.colorDonut = new Chart(document.getElementById("colorDonut"), {
-        type: "doughnut",
-        data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
-        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } } }
+      // Engine Size
+      const engineData = {};
+      data.forEach(d => engineData[d.Engine_Size_L] = (engineData[d.Engine_Size_L] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByEngine", "bar", {
+        labels: Object.keys(engineData),
+        datasets: [{ label: "Sales Volume", data: Object.values(engineData), backgroundColor: "#9932CC" }]
+      }, { plugins: { legend: { display: false } } });
+
+      // Fuel Type
+      const fuelData = {};
+      data.forEach(d => fuelData[d.Fuel_Type] = (fuelData[d.Fuel_Type] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByFuel", "pie", {
+        labels: Object.keys(fuelData),
+        datasets: [{ data: Object.values(fuelData), backgroundColor: ["#FFD700", "#ADFF2F", "#00CED1", "#FF69B4", "#FF4500"] }]
       });
 
-      charts.engineBar = new Chart(document.getElementById("engineBar"), {
-        type: "bar",
-        data: { labels: [], datasets: [{ label: "Sales", data: [], backgroundColor: "#9d4edd" }] },
-        options: { scales: { x: { ticks: { color: "#fff", font: chartFont } }, y: { ticks: { color: "#fff", font: chartFont } } } }
+      // Transmission
+      const transData = {};
+      data.forEach(d => transData[d.Transmission] = (transData[d.Transmission] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByTransmission", "pie", {
+        labels: Object.keys(transData),
+        datasets: [{ data: Object.values(transData), backgroundColor: ["#1E90FF", "#FF8C00", "#32CD32"] }]
       });
 
-      charts.fuelPie = new Chart(document.getElementById("fuelPie"), {
-        type: "pie",
-        data: { labels: [], datasets: [{ data: [] }] },
-        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } } }
-      });
-
-      charts.transmissionPie = new Chart(document.getElementById("transmissionPie"), {
-        type: "pie",
-        data: { labels: [], datasets: [{ data: [] }] },
-        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } } }
-      });
-
-      charts.modelBar = new Chart(document.getElementById("modelBar"), {
-        type: "bar",
-        data: { labels: [], datasets: [{ label: "Sales", data: [], backgroundColor: "#5f27cd" }] },
-        options: { scales: { x: { ticks: { color: "#fff", font: chartFont, maxRotation: 90, minRotation: 90 } }, y: { ticks: { color: "#fff", font: chartFont } } } }
+      // Car Model
+      const modelData = {};
+      data.forEach(d => modelData[d.Model] = (modelData[d.Model] || 0) + parseFloat(d.Sales_Volume || 0));
+      ctx("salesByModel", "bar", {
+        labels: Object.keys(modelData),
+        datasets: [{ label: "Sales Volume", data: Object.values(modelData), backgroundColor: "#8A2BE2" }]
+      }, {
+        plugins: { legend: { display: false } },
+        indexAxis: 'x',
+        scales: { x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 90 } } }
       });
     }
 
