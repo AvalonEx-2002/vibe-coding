@@ -138,84 +138,102 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // Example dataset (replace with your real dataset)
-    const dataset = [
-      { year: 2020, sales: 500, region: "North", color: "Black", engine: "2.0L", fuel: "Petrol", transmission: "Automatic", model: "X1" },
-      { year: 2020, sales: 700, region: "South", color: "White", engine: "3.0L", fuel: "Diesel", transmission: "Manual", model: "X3" },
-      { year: 2021, sales: 900, region: "East", color: "Red", engine: "2.0L", fuel: "Petrol", transmission: "Automatic", model: "X5" },
-      { year: 2021, sales: 600, region: "West", color: "Blue", engine: "4.4L", fuel: "Hybrid", transmission: "Automatic", model: "M3" },
-      { year: 2022, sales: 1200, region: "North", color: "Black", engine: "3.0L", fuel: "Electric", transmission: "Automatic", model: "M5" },
-    ];
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbkKYeVn1qV4pJKqtTnbD7CLYiJ-ZP3dQjFdpT0nbrxtgW4jl2BuejOYY5GKBzkmFzrxGxrIwOA7tP/pub?output=csv";
 
-    // Extract available years
-    const years = [...new Set(dataset.map(d => d.year))].sort((a, b) => a - b);
-
-    // Populate filter
-    const yearFilter = document.getElementById("yearFilter");
-    years.forEach(y => {
-      const option = document.createElement("option");
-      option.value = y;
-      option.textContent = y;
-      yearFilter.appendChild(option);
-    });
-
-    // Chart references
+    let dataset = [];
     let charts = {};
+    const yearFilter = document.getElementById("yearFilter");
+
+    async function loadData() {
+      const res = await fetch(SHEET_URL);
+      const text = await res.text();
+      const rows = text.split("\n").map(r => r.split(","));
+
+      const headers = rows[0].map(h => h.trim());
+      dataset = rows.slice(1).map(r => {
+        let obj = {};
+        headers.forEach((h, i) => obj[h] = r[i]?.trim());
+        obj["Year"] = parseInt(obj["Year"]);
+        obj["Sales_Volume"] = parseInt(obj["Sales_Volume"]) || 0;
+        return obj;
+      });
+
+      initUI();
+    }
+
+    function initUI() {
+      // Populate years filter
+      const years = [...new Set(dataset.map(d => d.Year))].sort((a, b) => a - b);
+      yearFilter.innerHTML = "";
+      years.forEach(y => {
+        const option = document.createElement("option");
+        option.value = y;
+        option.textContent = y;
+        yearFilter.appendChild(option);
+      });
+
+      initCharts();
+      updateCharts(years[0]);
+
+      yearFilter.addEventListener("change", e => updateCharts(parseInt(e.target.value)));
+    }
+
+    function aggregate(data, key) {
+      const groups = {};
+      data.forEach(d => {
+        const val = d[key];
+        groups[val] = (groups[val] || 0) + d.Sales_Volume;
+      });
+      return groups;
+    }
 
     function updateCharts(selectedYear) {
-      const data = dataset.filter(d => d.year == selectedYear);
+      const filtered = dataset.filter(d => d.Year === selectedYear);
 
-      // Sales Trend (across all years, static)
-      const salesByYear = years.map(y => dataset.filter(d => d.year == y).reduce((sum, r) => sum + r.sales, 0));
-      charts.salesTrend.data.labels = years;
-      charts.salesTrend.data.datasets[0].data = salesByYear;
+      // Sales Trend (all years, not filtered)
+      const yearly = aggregate(dataset, "Year");
+      charts.salesTrend.data.labels = Object.keys(yearly);
+      charts.salesTrend.data.datasets[0].data = Object.values(yearly);
       charts.salesTrend.update();
 
-      // Region Donut
-      const regions = [...new Set(data.map(d => d.region))];
-      const regionValues = regions.map(r => data.filter(d => d.region == r).reduce((s, r2) => s + r2.sales, 0));
-      charts.regionDonut.data.labels = regions;
-      charts.regionDonut.data.datasets[0].data = regionValues;
+      // Region
+      const regionAgg = aggregate(filtered, "Region");
+      charts.regionDonut.data.labels = Object.keys(regionAgg);
+      charts.regionDonut.data.datasets[0].data = Object.values(regionAgg);
       charts.regionDonut.update();
 
-      // Color Donut
-      const colors = [...new Set(data.map(d => d.color))];
-      const colorValues = colors.map(c => data.filter(d => d.color == c).reduce((s, r2) => s + r2.sales, 0));
-      charts.colorDonut.data.labels = colors;
-      charts.colorDonut.data.datasets[0].data = colorValues;
-      charts.colorDonut.data.datasets[0].backgroundColor = colors.map(c => c.toLowerCase());
+      // Color
+      const colorAgg = aggregate(filtered, "Color");
+      charts.colorDonut.data.labels = Object.keys(colorAgg);
+      charts.colorDonut.data.datasets[0].data = Object.values(colorAgg);
+      charts.colorDonut.data.datasets[0].backgroundColor = Object.keys(colorAgg).map(c => c.toLowerCase());
       charts.colorDonut.update();
 
-      // Engine Bar
-      const engines = [...new Set(data.map(d => d.engine))];
-      const engineValues = engines.map(e => data.filter(d => d.engine == e).reduce((s, r2) => s + r2.sales, 0));
-      charts.engineBar.data.labels = engines;
-      charts.engineBar.data.datasets[0].data = engineValues;
+      // Engine Size
+      const engineAgg = aggregate(filtered, "Engine_Size_L");
+      charts.engineBar.data.labels = Object.keys(engineAgg);
+      charts.engineBar.data.datasets[0].data = Object.values(engineAgg);
       charts.engineBar.update();
 
-      // Fuel Pie
-      const fuels = [...new Set(data.map(d => d.fuel))];
-      const fuelValues = fuels.map(f => data.filter(d => d.fuel == f).reduce((s, r2) => s + r2.sales, 0));
-      charts.fuelPie.data.labels = fuels;
-      charts.fuelPie.data.datasets[0].data = fuelValues;
+      // Fuel Type
+      const fuelAgg = aggregate(filtered, "Fuel_Type");
+      charts.fuelPie.data.labels = Object.keys(fuelAgg);
+      charts.fuelPie.data.datasets[0].data = Object.values(fuelAgg);
       charts.fuelPie.update();
 
-      // Transmission Pie
-      const transmissions = [...new Set(data.map(d => d.transmission))];
-      const transValues = transmissions.map(t => data.filter(d => d.transmission == t).reduce((s, r2) => s + r2.sales, 0));
-      charts.transmissionPie.data.labels = transmissions;
-      charts.transmissionPie.data.datasets[0].data = transValues;
+      // Transmission
+      const transAgg = aggregate(filtered, "Transmission");
+      charts.transmissionPie.data.labels = Object.keys(transAgg);
+      charts.transmissionPie.data.datasets[0].data = Object.values(transAgg);
       charts.transmissionPie.update();
 
-      // Model Bar
-      const models = [...new Set(data.map(d => d.model))];
-      const modelValues = models.map(m => data.filter(d => d.model == m).reduce((s, r2) => s + r2.sales, 0));
-      charts.modelBar.data.labels = models;
-      charts.modelBar.data.datasets[0].data = modelValues;
+      // Model
+      const modelAgg = aggregate(filtered, "Model");
+      charts.modelBar.data.labels = Object.keys(modelAgg);
+      charts.modelBar.data.datasets[0].data = Object.values(modelAgg);
       charts.modelBar.update();
     }
 
-    // Init charts
     function initCharts() {
       const chartFont = {
         family: 'Geist',
@@ -231,7 +249,7 @@
 
       charts.regionDonut = new Chart(document.getElementById("regionDonut"), {
         type: "doughnut",
-        data: { labels: [], datasets: [{ data: [], backgroundColor: ["#007aff","#34c759","#ffcc00","#ff3b30"] }] },
+        data: { labels: [], datasets: [{ data: [] }] },
         options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } } }
       });
 
@@ -244,35 +262,29 @@
       charts.engineBar = new Chart(document.getElementById("engineBar"), {
         type: "bar",
         data: { labels: [], datasets: [{ label: "Sales", data: [], backgroundColor: "#9d4edd" }] },
-        options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } }, scales: { x: { ticks: { color: "#fff", font: chartFont } }, y: { ticks: { color: "#fff", font: chartFont } } } }
+        options: { scales: { x: { ticks: { color: "#fff", font: chartFont } }, y: { ticks: { color: "#fff", font: chartFont } } } }
       });
 
       charts.fuelPie = new Chart(document.getElementById("fuelPie"), {
         type: "pie",
-        data: { labels: [], datasets: [{ data: [], backgroundColor: ["#ff6b6b","#1dd1a1","#54a0ff","#feca57"] }] },
+        data: { labels: [], datasets: [{ data: [] }] },
         options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } } }
       });
 
       charts.transmissionPie = new Chart(document.getElementById("transmissionPie"), {
         type: "pie",
-        data: { labels: [], datasets: [{ data: [], backgroundColor: ["#ff9f43","#10ac84"] }] },
+        data: { labels: [], datasets: [{ data: [] }] },
         options: { plugins: { legend: { labels: { font: chartFont, color: "#fff" } } } }
       });
 
       charts.modelBar = new Chart(document.getElementById("modelBar"), {
         type: "bar",
         data: { labels: [], datasets: [{ label: "Sales", data: [], backgroundColor: "#5f27cd" }] },
-        options: { indexAxis: 'x', plugins: { legend: { labels: { font: chartFont, color: "#fff" } } }, scales: { x: { ticks: { color: "#fff", font: chartFont, maxRotation: 90, minRotation: 90 } }, y: { ticks: { color: "#fff", font: chartFont } } } }
+        options: { scales: { x: { ticks: { color: "#fff", font: chartFont, maxRotation: 90, minRotation: 90 } }, y: { ticks: { color: "#fff", font: chartFont } } } }
       });
     }
 
-    initCharts();
-    updateCharts(years[0]);
-
-    // Handle filter change
-    yearFilter.addEventListener("change", (e) => {
-      updateCharts(e.target.value);
-    });
+    loadData();
   </script>
 </body>
 </html>
